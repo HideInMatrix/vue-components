@@ -48,6 +48,13 @@ export default {
     }
   },
   methods: {
+    /**
+     * @description: 选中的选项
+     * @param {*}
+     * @return {*}
+     * @Date: 2021-05-22 13:43:20
+     * @Author: David
+     */
     currentSelect() {
       this.$parent.label = this.label;
       this.$parent.optionid = this.optionid;
