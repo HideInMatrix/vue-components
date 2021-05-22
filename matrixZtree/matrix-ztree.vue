@@ -21,6 +21,7 @@ params
 import "../../../static/plugins/ztree/zTreeStyle.css";
 import "../../../static/plugins/ztree/jquery.ztree.all.min.js";
 export default {
+  name: "matrix-ztree",
   props: {
     id: String,
     TreeSetting: {
