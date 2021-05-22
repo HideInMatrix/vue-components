@@ -3,7 +3,7 @@
  * @Date: 2021-03-19 11:15:21
  * @LastEditTime: 2021-04-06 08:51:54
  * @LastEditors: David
- * @Description: 
+ * @Description: 封装iveiw 的视频上传插件
  * @FilePath: /trunk/src/components/uploadFile/index.vue
  * 可以输入预定的版权声明、个性签名、空行等
 -->
