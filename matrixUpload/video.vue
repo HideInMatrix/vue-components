@@ -1,10 +1,10 @@
 <!--
  * @Author: David
- * @Date: 2021-03-19 11:15:21
- * @LastEditTime: 2021-04-06 08:51:54
+ * @Date: 2021-05-14 17:49:33
+ * @LastEditTime: 2021-05-26 09:40:20
  * @LastEditors: David
- * @Description: 封装iveiw 的视频上传插件
- * @FilePath: /trunk/src/components/uploadFile/index.vue
+ * @Description: 
+ * @FilePath: /WebFront 2/src/components/matrixUpload/index.vue
  * 可以输入预定的版权声明、个性签名、空行等
 -->
 <template>
@@ -19,15 +19,14 @@
       :on-exceeded-size="handleMaxSize"
       :before-upload="handleBeforeUpload"
       :on-progress="fileProgress"
-      multiple
       :name="uploadFileName"
       :action="fileUploadUrl"
       :data="uploadParams"
-      style="display: inline-block;width:252px;margin:10px;"
+      style="display: inline-block;width:100px;margin:10px;"
     >
       <div class="upload-rang">
         <Icon type="md-add" size="30" />
-        <span>上传视频</span>
+        <span>点击上传图片</span>
       </div>
     </Upload>
     <div
@@ -35,13 +34,15 @@
       v-for="(item, index) in uploadList"
       :key="index"
     >
-      <template v-if="item.status === 'finished'">
-        <video :src="item.path"></video>
-        <p
+      <template
+        v-if="item.status === 'finished' || typeof item.status == 'undefined'"
+      >
+        <img :src="item.path" />
+        <!-- <p
           style="position: absolute;top: calc(50% - 20px);z-index: 9;color: red;right: 10px;"
         >
           {{ $utils.formatDuraton(item.videoTime) }}
-        </p>
+        </p> -->
         <div class="demo-upload-list-cover">
           <Icon
             type="ios-trash-outline"
@@ -92,11 +93,28 @@ export default {
         return null;
       }
     },
+    //是否手动上传
+    isHandUpload: {
+      type: Boolean,
+      default: () => {
+        return false;
+      }
+    },
+
+    /**
+     * @description: 仅仅只能上传一张图片
+     */
+    singleUpload: {
+      type: Boolean,
+      default: () => {
+        return false;
+      }
+    },
 
     /**
      * @description: 初始化上传的文件列表
      * @param {*}
-     * @return {*}
+     * @return {*} [{path:"",name:""}]
      * @Date: 2021-03-19 16:36:48
      * @Author: David
      */
@@ -111,7 +129,7 @@ export default {
   data() {
     return {
       uploadList: [], //文件列表
-      fileAccept: ".mp4", //上传文件的类型
+      fileAccept: ".png,.jpg,.jpeg", //上传文件的类型
       delteFileIds: [] //将要删除文件的ID
     };
   },
@@ -213,6 +231,17 @@ export default {
       file.showProgress = true;
       file.percentage = 0;
 
+      //如果是手动上传
+      if (this.isHandUpload) {
+        file.status = "finished";
+        file.percentage = 100;
+        file.path = URL.createObjectURL(file);
+      }
+
+      //如果是单独上传只要一个文件,清空数组
+      if (this.singleUpload) {
+        this.uploadList = [];
+      }
       this.uploadList.push(file);
 
       let typeArr = this.fileAccept.split(",");
@@ -225,7 +254,11 @@ export default {
           return item == fileType;
         })
       ) {
-        return true;
+        if (this.isHandUpload) {
+          return false;
+        } else {
+          return true;
+        }
       } else {
         this.$Notice.warning({
           title: "文件类型出错",
@@ -268,9 +301,10 @@ export default {
 <style lang="scss" scoped>
 .upload-main {
   .upload-rang {
-    width: 252px;
-    height: 140px;
+    width: 100px;
+    height: 100px;
     border-radius: 5px;
+    background-color: #f7f7f7;
     border: 1px solid #dddddd;
     display: flex;
     align-items: center;
@@ -281,10 +315,10 @@ export default {
 }
 .demo-upload-list {
   display: inline-block;
-  width: 252px;
-  height: 140px;
+  width: 100px;
+  height: 100px;
   text-align: center;
-  line-height: 140px;
+  line-height: 100px;
   border: 1px solid #ddd;
   border-radius: 4px;
   background: #fff;
