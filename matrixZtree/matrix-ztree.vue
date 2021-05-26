@@ -27,7 +27,18 @@ export default {
     TreeSetting: {
       type: Object,
       default: () => {
-        return {};
+        return {
+          data: {
+            keep: {
+              parent: true,
+              leaf: true
+            },
+            key: {
+              children: "children",
+              name: "name"
+            }
+          }
+        };
       }
     },
     zNodes: {
@@ -60,7 +71,7 @@ export default {
   methods: {
     setGroupTree() {
       //赋值树，所有的设置和志传入都在该函数中设置
-      var _this = this;
+      let _this = this;
       _this.nodes = _this.deepCopy(_this.zNodes);
 
       if (_this.setting.check) {
@@ -81,8 +92,8 @@ export default {
       //绑定click回调函数
       _this.setting.callback.onClick = _this.nodeOnClick;
       if (typeof _this.nodes[0] != "undefined") {
-        // var nodes = _this.$utils.openFistNode(_this.nodes[0]);
-        var nodes = _this.$utils.openFistNode(_this.nodes);
+        // let nodes = _this.$utils.openFistNode(_this.nodes[0]);
+        let nodes = _this.$utils.openFistNode(_this.nodes);
         //设置节点图标
         _this.nodes = _this.circleNodes(_this.nodes[0]);
       }
@@ -100,14 +111,14 @@ export default {
 
     circleNodes(item) {
       const _this = this;
-      if (item.subList.length == 0) {
+      if (item[_this.TreeSetting.data.key.children].length == 0) {
         item.isParent = false;
         return item;
       }
       item.isParent = true;
       item.iconOpen = "../static/images/file.png";
       item.iconClose = "../static/images/closeFile.png";
-      item.subList.forEach(obj => {
+      item[_this.TreeSetting.data.key.children].forEach(obj => {
         _this.circleNodes(obj);
       });
       return item;
@@ -115,13 +126,13 @@ export default {
 
     //获取节点路径
     getNodePath(Node) {
-      var _this = this;
-      // var listNode = Node.getPath();
-      var treeObj = $.fn.zTree.getZTreeObj(_this.id);
-      var node = treeObj.getNodeByParam("id", Node.id, null);
-      var listNode = node.getPath();
-      var path = "";
-      for (var i = 0; i < listNode.length; i++) {
+      let _this = this;
+      // let listNode = Node.getPath();
+      let treeObj = $.fn.zTree.getZTreeObj(_this.id);
+      let node = treeObj.getNodeByParam("id", Node.id, null);
+      let listNode = node.getPath();
+      let path = "";
+      for (let i = 0; i < listNode.length; i++) {
         path += listNode[i].name + "-";
       }
       path = path.substring(0, path.length - 1);
@@ -130,7 +141,7 @@ export default {
 
     //获取点击的数据()
     getNodeData(treeNode) {
-      var _this = this;
+      let _this = this;
       if (
         _this.setting.check.chkStyle == "radio" &&
         !treeNode.isParent &&
@@ -141,7 +152,7 @@ export default {
         }
       } else {
         if (!treeNode.isParent && !treeNode.nocheck) {
-          var index = _this.selectedNodes.findIndex(x => x.id == treeNode.id);
+          let index = _this.selectedNodes.findIndex(x => x.id == treeNode.id);
           if (index != -1) {
             if (!treeNode.checked) {
               _this.selectedNodes.splice(index, 1);
@@ -158,14 +169,14 @@ export default {
         treeNode.children.length != 0 &&
         !treeNode.nocheck
       ) {
-        for (var i = 0; i < treeNode.children.length; i++) {
+        for (let i = 0; i < treeNode.children.length; i++) {
           _this.getNodeData(treeNode.children[i]);
         }
       }
     },
     //取消勾选的节点
     cancelSelected(treeNode) {
-      var _this = this;
+      let _this = this;
       if (!treeNode.isParent) {
         treeNode.checked = false;
       }
@@ -174,19 +185,19 @@ export default {
         treeNode.children.length != 0 &&
         !treeNode.nocheck
       ) {
-        for (var i = 0; i < treeNode.children.length; i++) {
+        for (let i = 0; i < treeNode.children.length; i++) {
           _this.getNodeData(treeNode.children[i]);
         }
       }
     },
     //初始化勾选节点
     selectedTheFirstNode(node) {
-      var _this = this;
+      let _this = this;
       $.fn.zTree.init($(this.id), _this.setting, _this.nodes);
-      var zTree = $.fn.zTree.getZTreeObj(this.id);
+      let zTree = $.fn.zTree.getZTreeObj(this.id);
 
-      var node = zTree.getNodeByParam("id", node.id);
-      zTree.selectNode(node); //根据该节点选中
+      let temnode = zTree.getNodeByParam("id", node.id);
+      zTree.selectNode(temnode); //根据该节点选中
     },
     destoryTree() {
       $.fn.zTree.destroy(this.id);
@@ -194,11 +205,11 @@ export default {
     //勾选全部节点
     checkAllNodes(value) {
       //此处勾选全选和取消全选（设计好搞事情）
-      var _this = this;
-      var zTree = $.fn.zTree.getZTreeObj(_this.id);
+      let _this = this;
+      let zTree = $.fn.zTree.getZTreeObj(_this.id);
       zTree.checkAllNodes(value);
-      var temp = zTree.getCheckedNodes(value);
-      for (var i = 0; i < temp.length; i++) {
+      let temp = zTree.getCheckedNodes(value);
+      for (let i = 0; i < temp.length; i++) {
         if (temp[i].children.length == 0) {
           _this.getNodeData(temp[i]);
         } else {
@@ -209,10 +220,10 @@ export default {
     },
     //修改节点信息(将修改的节点数据同步到被修改的数据上)
     editNode(treeNode) {
-      var _this = this;
-      var zTree = $.fn.zTree.getZTreeObj(_this.id);
-      var editNode = zTree.getNodeByParam("id", treeNode.id);
-      for (var i in treeNode) {
+      let _this = this;
+      let zTree = $.fn.zTree.getZTreeObj(_this.id);
+      let editNode = zTree.getNodeByParam("id", treeNode.id);
+      for (let i in treeNode) {
         if (i == "children") {
           continue;
         }
@@ -225,10 +236,10 @@ export default {
       });
     },
 
-    //删除节点
+    //删除节点(此处有问题)
     remove(treeNode) {
-      var _this = this;
-      var zTree = $.fn.zTree.getZTreeObj(_this.id);
+      let _this = this;
+      let zTree = $.fn.zTree.getZTreeObj(_this.id);
       if (treeNode.isParent) {
         zTree.removeChildNodes(treeNode);
         // zTree.removeNode(treeNode, true);
@@ -236,9 +247,8 @@ export default {
         zTree.removeNode(treeNode, true); //树视图上删除
       }
 
-      var parentNode = treeNode.getParentNode();
-
-      if (parentNode.children.length == 0) {
+      let parentNode = treeNode.getParentNode();
+      if (parentNode[this.TreeSetting.data.key.children].length == 0) {
         parentNode.isParent = false;
         zTree.updateNode(parentNode);
         zTree.selectNode(parentNode);
@@ -249,14 +259,27 @@ export default {
     getParentNode(treeNode) {
       return treeNode.getParentNode();
     },
-    //添加节点（暂时不需要）
+
+    /**
+     * @description: 添加节点（暂时不需要）
+     * @param {*} sNode 主节点
+     * @param {*} addNode 添加的节点
+     * @return {*}
+     * @Date: 2021-05-24 16:07:51
+     * @Author: David
+     */
     add(sNode, addNode) {
-      var _this = this;
-      var zTree = $.fn.zTree.getZTreeObj(_this.id);
+      let _this = this;
+      let zTree = $.fn.zTree.getZTreeObj(_this.id);
+
+      if (this.TreeSetting.view) {
+        sNode.iconOpen = "../static/images/file.png";
+        sNode.iconClose = "../static/images/closeFile.png";
+      }
 
       sNode.isParent = true; //手动改变一下是否为父节点的属性
 
-      var newNode = zTree.addNodes(sNode, -1, addNode, true);
+      let newNode = zTree.addNodes(sNode, -1, addNode, true);
 
       zTree.selectNode(sNode);
       _this.$emit("getSelected", sNode, _this.id, 1);
@@ -264,9 +287,9 @@ export default {
     },
 
     deepCopy(obj) {
-      var _this = this;
-      var result = Array.isArray(obj) ? [] : {};
-      for (var key in obj) {
+      let _this = this;
+      let result = Array.isArray(obj) ? [] : {};
+      for (let key in obj) {
         if (obj.hasOwnProperty(key)) {
           if (typeof obj[key] === "object" && obj[key] !== null) {
             result[key] = _this.deepCopy(obj[key]); //递归复制
@@ -324,7 +347,7 @@ export default {
     },
     nodeOnClick(e, treeId, treeNode) {
       const _this = this;
-      var zTree = $.fn.zTree.getZTreeObj(treeId);
+      let zTree = $.fn.zTree.getZTreeObj(treeId);
       zTree.checkNode(treeNode, !treeNode.checked, true);
       // zTree.expandNode(treeNode);
       _this.selectedNode = treeNode;
