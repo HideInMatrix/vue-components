@@ -2,6 +2,8 @@
 完成如上图的工作
 
 使用实例：
+``` vue
+
 <template>
       <matrix-table :hearderTable="tableHeader" :data="tableData">
         <template v-slot:enable="{ row, index }">
@@ -133,6 +135,8 @@
       ],
       }
 </script>
+```
+
       
 
       
