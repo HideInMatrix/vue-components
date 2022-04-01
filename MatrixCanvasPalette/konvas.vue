@@ -78,10 +78,21 @@
         ></span>
       </div>
       <div class="canvas-control">
-        <h5>画布是否可以移动</h5>
-        <span style="width:unset">{{
+        <Alert>
+          <h5>画布是否可以移动</h5>
+          <template slot="desc"
+            >{{
+              group
+                ? group.draggable()
+                  ? "可以移动"
+                  : "不可以移动"
+                : "不可以移动"
+            }}
+          </template>
+        </Alert>
+        <!-- <span style="width:unset">{{
           group ? (group.draggable() ? "可以移动" : "不可以移动") : "不可以移动"
-        }}</span>
+        }}</span> -->
         <!-- <span class="fa fa-download" @click="exportImage()"></span> -->
       </div>
     </div>
@@ -282,20 +293,16 @@ export default {
           }
           break;
         case "clear": {
-          for (let i = 0; i <= this.appHistoryStep; i++) {
-            if (this.appHistoryStep > 1) {
-              this.appHistoryStep--;
-
-              let scale = this.group.getAbsoluteScale();
-              this.groupScale = (scale.x * 10).toFixed(2);
-              let preGroup = (this.group = this.appHistory.pop());
-              if (i == this.appHistoryStep) {
-                this.baseLayer.destroyChildren();
-                this.baseLayer.add(preGroup);
-                this.baseLayer.draw();
-              }
-            } else break;
+          if (this.appHistory.length > 1) {
+            this.groupScale = 10;
+            this.appHistory.splice(1, this.appHistory.length - 1);
+            this.appHistoryStep = 1;
+            let preGroup = (this.group = this.appHistory[0]);
+            this.baseLayer.destroyChildren();
+            this.baseLayer.add(preGroup);
+            this.baseLayer.draw();
           }
+
           break;
         }
         case "minus": {
