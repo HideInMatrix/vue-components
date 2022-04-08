@@ -67,7 +67,7 @@
         ></span>
         <span
           style="font-weight: bolder;"
-          :class="{ activeRight: inclinedable }"
+          :class="[inclinedable ? 'active-right' : '']"
           @click="drawShap('inclinedable')"
           >\</span
         >
@@ -79,14 +79,14 @@
       </div>
       <div class="canvas-control">
         <Alert>
-          <h5>画布是否可以移动</h5>
+          <h5>当前画布是否可以拖动</h5>
           <template slot="desc"
             >{{
               group
                 ? group.draggable()
-                  ? "可以移动"
-                  : "不可以移动"
-                : "不可以移动"
+                  ? "可以拖动"
+                  : "不可以拖动"
+                : "不可以拖动"
             }}
           </template>
         </Alert>
@@ -158,7 +158,9 @@ export default {
       background: {
         width: 0,
         height: 0
-      }
+      },
+      canvasWidth: 0,
+      canvasHeight: 0
     };
   },
   computed: {
@@ -276,8 +278,8 @@ export default {
     },
 
     controlCanvas(action) {
-      let canvasWidth = this.$refs.canvasRef.clientWidth;
-      let canvasHeight = this.$refs.canvasRef.clientHeight;
+      // let canvasWidth = this.$refs.canvasRef.clientWidth;
+      // let canvasHeight = this.$refs.canvasRef.clientHeight;
 
       switch (action) {
         case "prev":
@@ -308,8 +310,8 @@ export default {
         case "minus": {
           if (this.groupScale > 2 && this.groupScale <= 20) {
             this.group.draggable(!this.canPaint);
-            this.group.setAttr("x", canvasWidth / 2);
-            this.group.setAttr("y", canvasHeight / 2);
+            this.group.setAttr("x", this.canvasWidth / 2);
+            this.group.setAttr("y", this.canvasHeight / 2);
             this.groupScale -= 1;
             this.addHistory(this.group.clone());
             this.group.scale({
@@ -322,8 +324,8 @@ export default {
         case "plus": {
           if (this.groupScale >= 2 && this.groupScale < 20) {
             this.group.draggable(!this.canPaint);
-            this.group.setAttr("x", canvasWidth / 2);
-            this.group.setAttr("y", canvasHeight / 2);
+            this.group.setAttr("x", this.canvasWidth / 2);
+            this.group.setAttr("y", this.canvasHeight / 2);
             this.groupScale += 1;
             this.addHistory(this.group.clone());
             this.group.scale({
@@ -353,12 +355,14 @@ export default {
     },
     setBrush(type) {
       this.canPaint = !this.canPaint;
+      this[this.lastSymbol] = false;
       this.group.draggable(!this.canPaint);
       this.config.lineWidth = type;
     },
     setText() {
       this.canPaint = false;
       this.needTextArea = true;
+      this[this.lastSymbol] = false;
       document.getElementById("textFont").classList.add("active");
       this.addHistory(this.group.clone());
       this.baseStage.on("mousedown touchstart", evt => {
@@ -369,12 +373,13 @@ export default {
             x: pos.x,
             y: pos.y,
             fontSize: 20,
-            text: "双击击编辑",
+            text: "双击编辑",
             draggable: true,
             borderStroke: "#000", // 虚线颜色
-            borderStrokeWidth: 1, //虚线大小
+            borderStrokeWidth: 10, //虚线大小
             borderDash: [0], // 虚线间距
-            rotation: -this.group.rotation()
+            rotation: -this.group.rotation(),
+            fill: this.config.lineColor
           });
 
           this.group.add(textNode);
@@ -409,7 +414,7 @@ export default {
           // );
 
           // this.group.add(tr);
-          textNode.hide();
+          // textNode.hide();
           // tr.hide();
           this.baseLayer.draw();
 
@@ -426,7 +431,6 @@ export default {
 
             // textNode.x(this.getRelativePointerPosition(this.baseLayer).x - this.getRelativePointerPosition(this.baseLayer).x);
             // textNode.y(this.getRelativePointerPosition(this.baseLayer).y);
-
             this.buildTextArea(
               { x: textNode.x(), y: textNode.y() },
               textNode
@@ -437,7 +441,7 @@ export default {
             this.addHistory(this.group.clone());
           });
 
-          this.buildTextArea(textPosition, textNode);
+          // this.buildTextArea(textPosition, textNode);
         }
         this.needTextArea = false;
       });
@@ -453,7 +457,7 @@ export default {
       const canvasContainer = document.getElementById("container");
       canvasContainer.appendChild(textarea);
 
-      textarea.value = textNode.text();
+      textarea.value = textNode.text() === "双击编辑" ? "" : textNode.text();
       textarea.style.position = "absolute";
       textarea.style.top = textNode.absolutePosition().y + "px"; //group的增加是修正偏移的位置
       textarea.style.left = textNode.absolutePosition().x + "px";
@@ -474,8 +478,10 @@ export default {
       textarea.style.fontFamily = textNode.fontFamily();
       textarea.style.transformOrigin = "left top";
       textarea.style.textAlign = textNode.align();
-      textarea.style.color = textNode.fill();
+      textarea.style.color = this.config.lineColor;
+      textarea.style.border = "1px solid #f32f15";
       // let rotation = textNode.rotation();
+
       let rotation = 0;
 
       var transform = "";
@@ -568,17 +574,19 @@ export default {
      * @Author: David
      */
     initCanvas() {
-      let canvasWidth = this.$refs.canvasRef.clientWidth;
-      let canvasHeight = this.$refs.canvasRef.clientHeight;
+      // let canvasWidth = this.$refs.canvasRef.clientWidth;
+      // let canvasHeight = this.$refs.canvasRef.clientHeight ;
+      this.canvasWidth = this.$refs.canvasRef.clientWidth;
+      this.canvasHeight = 1000;
       this.baseStage = new Konva.Stage({
         container: "container", // id of container <div>
-        width: canvasWidth,
-        height: canvasHeight
+        width: this.canvasWidth,
+        height: this.canvasHeight
       });
       this.baseLayer = new Konva.Layer(); //基础的画布层
       this.group = new Konva.Group({
-        x: canvasWidth / 2,
-        y: canvasHeight / 2
+        x: this.canvasWidth / 2,
+        y: this.canvasHeight / 2
       });
 
       this.baseLayer.add(this.group);
@@ -605,8 +613,8 @@ export default {
       return (() => {
         let image;
         let { x, y, url, width, height } = params;
-        let canvasWidth = this.$refs.canvasRef.clientWidth;
-        let canvasHeight = this.$refs.canvasRef.clientHeight;
+        // let canvasWidth = this.$refs.canvasRef.clientWidth;
+        // let canvasHeight = this.$refs.canvasRef.clientHeight;
         let imageObj = new Image();
         imageObj.setAttribute("crossOrigin", "anonymous");
 
@@ -616,8 +624,8 @@ export default {
           let scaleimage = this.scaleImage(
             imageObj.naturalWidth,
             imageObj.naturalHeight,
-            canvasWidth,
-            canvasHeight
+            this.canvasWidth,
+            this.canvasHeight
           );
           // console.log(scaleimage);
           this.background = scaleimage;
@@ -739,32 +747,63 @@ export default {
       this.lastSymbol = type;
       this.baseStage.on("mousedown touchstart", e => {
         let pos = this.getRelativePointerPosition(this.group);
+        //暂时固定写法
         if (type == "tickable" && this.tickable) {
           this.addHistory(this.group.clone());
+          // [pos.x, pos.y, pos.x + 20, pos.y + 15, pos.x + 35, pos.y - 15];
           let tick = new Konva.Line({
-            points: [
-              pos.x,
-              pos.y,
-              pos.x + 20,
-              pos.y + 15,
-              pos.x + 35,
-              pos.y - 15
-            ],
+            points: [pos.x, pos.y],
             stroke: this.config.lineColor,
             strokeWidth: this.config.lineWidth,
             lineJoin: "round"
           });
+          if (this.group.rotation() == 0) {
+            tick.points(
+              tick
+                .points()
+                .concat([pos.x + 20, pos.y + 15, pos.x + 35, pos.y - 15])
+            );
+          } else if (this.group.rotation() == 90) {
+            tick.points(
+              tick
+                .points()
+                .concat([pos.x + 15, pos.y - 20, pos.x - 15, pos.y - 35])
+            );
+          } else if (this.group.rotation() == 180) {
+            tick.points(
+              tick
+                .points()
+                .concat([pos.x - 15, pos.y - 20, pos.x - 35, pos.y + 15])
+            );
+          } else {
+            tick.points(
+              tick
+                .points()
+                .concat([pos.x - 20, pos.y + 15, pos.x + 15, pos.y + 35])
+            );
+          }
           this.group.add(tick);
           this.baseLayer.draw();
         }
         if (type == "inclinedable" && this.inclinedable) {
           this.addHistory(this.group.clone());
+          //  [pos.x, pos.y, pos.x + 30, pos.y + 45]
           let inclined = new Konva.Line({
-            points: [pos.x, pos.y, pos.x + 30, pos.y + 45],
+            points: [pos.x, pos.y],
             stroke: this.config.lineColor,
             strokeWidth: this.config.lineWidth,
             lineJoin: "round"
           });
+          if (this.group.rotation() == 0) {
+            inclined.points(inclined.points().concat([pos.x + 30, pos.y + 45]));
+          } else if (this.group.rotation() == 90) {
+            inclined.points(inclined.points().concat([pos.x + 45, pos.y - 30]));
+          } else if (this.group.rotation() == 180) {
+            inclined.points(inclined.points().concat([pos.x - 30, pos.y - 45]));
+          } else {
+            inclined.points(inclined.points().concat([pos.x - 45, pos.y + 30]));
+          }
+
           this.group.add(inclined);
           this.baseLayer.draw();
         }
@@ -793,10 +832,10 @@ export default {
       });
     },
     exportImage() {
-      let canvasWidth = this.$refs.canvasRef.clientWidth;
-      let canvasHeight = this.$refs.canvasRef.clientHeight;
-      this.group.setAttr("x", canvasWidth / 2);
-      this.group.setAttr("y", canvasHeight / 2);
+      // let canvasWidth = this.$refs.canvasRef.clientWidth;
+      // let canvasHeight = this.$refs.canvasRef.clientHeight;
+      this.group.setAttr("x", this.canvasWidth / 2);
+      this.group.setAttr("y", this.canvasHeight / 2);
       this.groupScale = 10;
       this.group.scale({
         x: +(this.groupScale / 10).toFixed(2),
@@ -873,6 +912,7 @@ export default {
   display: flex;
   width: 100%;
   height: 100%;
+  // height: 1120px;
 
   .container-wrapper {
     width: calc(100% - 130px);
@@ -886,6 +926,7 @@ export default {
     #container {
       width: 100%;
       height: calc(100% - 120px);
+      overflow: auto;
       border: 1px solid #eee;
       cursor: crosshair;
       position: relative;
@@ -897,6 +938,11 @@ export default {
     margin-left: 4px;
     div {
       padding: 5px;
+    }
+    .canvas-control {
+      .active-right {
+        color: #f2849e;
+      }
     }
     .canvas-control,
     .canvas-brush {
