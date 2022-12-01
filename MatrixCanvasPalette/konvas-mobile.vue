@@ -1,6 +1,12 @@
 <template>
-    <div class="drawer-wrapper" @touchmove="preventTouchMove($event)">
+    <div
+        class="drawer-wrapper"
+        @touchstart="onTouchStart($event)"
+        @touchend="onTouchEnd($event)"
+        @touchmove="preventTouchMove($event)"
+    >
         <div class="container-wrapper">
+            <div class="drawer-index">{{ currentIndex + 1 }}/{{ total }}</div>
             <div id="container" ref="canvasRef"></div>
         </div>
         <!-- <van-loading v-show="show" type="spinner" color="#1989fa" /> -->
@@ -15,6 +21,14 @@ export default {
         renderImgUrl: {
             type: String,
             default: () => "",
+        },
+        total: {
+            type: Number,
+            default: () => 0,
+        },
+        currentIndex: {
+            type: Number,
+            default: () => 0,
         },
     },
     components: { [Loading.name]: Loading },
@@ -34,7 +48,7 @@ export default {
             groupDegree: 0, //角度
             groupScale: 10,
             colors: ["#fef4ac", "#0018ba", "#ffc200", "#f32f15", "#cccccc", "#5ab639", "#ffffff"],
-            brushs: [
+            brushes: [
                 {
                     className: "small fa fa-paint-brush",
                     lineWidth: 3,
@@ -65,6 +79,17 @@ export default {
             canvasHeight: 0,
 
             show: false, // 加载进度
+
+            scaleDown: false,
+            touchDistance: 0,
+            lastPinchScale: 1,
+
+            imageNatural: {
+                width: 0,
+                height: 0,
+                scaleWidth: 0,
+                scaleHeight: 0,
+            },
         };
     },
     computed: {
@@ -107,15 +132,105 @@ export default {
             this.appHistoryStep = 0;
             this.initCanvas();
         },
+        canPaint(newValue) {
+            this.$emit("penStatus", newValue);
+        },
+        appHistoryStep() {
+            this.$emit("revokeStatus", this.appHistory.length);
+        },
     },
-
     mounted() {
         this.initCanvas();
+        this.$emit("penStatus", this.canPaint);
     },
     methods: {
+        /**
+         * @description: 笔的大小随着画布的放大而缩小
+         * @return {*}
+         * @Date: 2022-11-11 15:17:12
+         * @Author: David
+         */
+        scaleBrush() {
+            let scale = this.group.scale();
+            console.log(scale);
+            // this.config.lineWidth = this.config.lineWidth / scale.x;
+            console.log(this.config.lineWidth);
+        },
+        onTouchStart(event) {
+            let _this = this;
+
+            let x = _this.group.getAttr("x");
+            let y = _this.group.getAttr("y");
+
+            if (event.touches.length > 1) {
+                _this.scaleDown = true;
+
+                _this.canPaint = false;
+                _this.group.draggable(false);
+
+                let xLen = Math.abs(event.touches[1].pageX - event.touches[0].pageX);
+                let yLen = Math.abs(event.touches[1].pageY - event.touches[0].pageY);
+
+                _this.touchDistance = Math.sqrt(xLen * xLen + yLen * yLen);
+            }
+        },
+
         preventTouchMove(event) {
+            let _this = this;
+
+            if (event.touches.length > 1) {
+                let xLen = Math.abs(event.touches[1].pageX - event.touches[0].pageX);
+                let yLen = Math.abs(event.touches[1].pageY - event.touches[0].pageY);
+
+                let touchDistance = Math.sqrt(xLen * xLen + yLen * yLen);
+
+                if (_this.touchDistance > 0) {
+                    let pinchScale = (touchDistance / _this.touchDistance) * _this.lastPinchScale;
+
+                    let x = event.touches[0].clientX + xLen / 2;
+                    let y = event.touches[0].clientY + yLen / 2;
+
+                    _this.doScale({ x: x, y: y }, pinchScale);
+                }
+            }
+
             event.preventDefault(true);
         },
+
+        onTouchEnd(event) {
+            let _this = this;
+
+            _this.lastPinchScale = _this.group.scale().x;
+
+            if (_this.scaleDown) {
+                _this.scaleDown = false;
+                _this.group.setDraggable(true);
+            }
+        },
+
+        doScale: function (anchorPt, newScale) {
+            let _this = this;
+
+            let x = _this.group.getAttr("x");
+            let y = _this.group.getAttr("y");
+
+            let scale = _this.group.scale();
+
+            let x1 = anchorPt.x;
+            let y1 = anchorPt.y;
+
+            let s1 = scale.x;
+            let s2 = newScale;
+
+            let x2 = x1 - ((x1 - x) * s2) / s1;
+            let y2 = y1 - ((y1 - y) * s2) / s1;
+
+            _this.group.setAttr("x", x2);
+            _this.group.setAttr("y", y2);
+
+            _this.group.scale({ x: newScale, y: newScale });
+        },
+
         canvasDestroyed() {
             this.baseStage ? this.baseStage.destroy() : null;
         },
@@ -217,28 +332,28 @@ export default {
                 case "minus": {
                     if (this.groupScale > 2 && this.groupScale <= 20) {
                         this.group.draggable(!this.canPaint);
+
                         this.group.setAttr("x", this.canvasWidth / 2);
                         this.group.setAttr("y", this.canvasHeight / 2);
                         this.groupScale -= 1;
+                        let newScale = +(this.groupScale / 10).toFixed(2);
                         this.addHistory(this.group.clone());
-                        this.group.scale({
-                            x: +(this.groupScale / 10).toFixed(2),
-                            y: +(this.groupScale / 10).toFixed(2),
-                        });
+                        this.group.scale({ x: newScale, y: newScale });
+                        this.scaleBrush();
                     }
                     break;
                 }
                 case "plus": {
                     if (this.groupScale >= 2 && this.groupScale < 20) {
                         this.group.draggable(!this.canPaint);
+
                         this.group.setAttr("x", this.canvasWidth / 2);
                         this.group.setAttr("y", this.canvasHeight / 2);
                         this.groupScale += 1;
+                        let newScale = +(this.groupScale / 10).toFixed(2);
                         this.addHistory(this.group.clone());
-                        this.group.scale({
-                            x: +(this.groupScale / 10).toFixed(2),
-                            y: +(this.groupScale / 10).toFixed(2),
-                        });
+                        this.group.scale({ x: newScale, y: newScale });
+                        this.scaleBrush();
                     }
                 }
             }
@@ -539,10 +654,17 @@ export default {
                         this.canvasWidth,
                         this.canvasHeight
                     );
+                    this.imageNatural = {
+                        width: imageObj.naturalWidth,
+                        height: imageObj.naturalHeight,
+                        scaleWidth: scaleimage.width,
+                        scaleHeight: scaleimage.height,
+                    };
                     let calcCanvasSize = () => {
                         return new Promise((resolve, reject) => {
                             let canvasSize = null;
                             canvasSize = setInterval(() => {
+                                if (typeof scaleimage === "undefined") return;
                                 if (scaleimage.width <= this.canvasWidth && scaleimage.height <= this.canvasHeight) {
                                     clearInterval(canvasSize);
                                     resolve();
@@ -800,10 +922,15 @@ export default {
             transList.forEach(element => {
                 element.destroy();
             });
+            let ratio = () => {
+                let widthScale = this.imageNatural.width / this.imageNatural.scaleWidth;
+                let heightScale = this.imageNatural.height / this.imageNatural.scaleHeight;
+                return Math.max(widthScale, heightScale, 1);
+            };
             let dataURL = this.baseStage.toDataURL({
                 x: relativePosition.x,
                 y: relativePosition.y,
-                pixelRatio: 1,
+                pixelRatio: ratio(),
                 width: relativePosition.width,
                 height: relativePosition.height,
             });
@@ -836,6 +963,20 @@ export default {
         //     display: flex;
         //     gap: 10px;
         // }
+        position: relative;
+
+        .drawer-index {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            color: #fff;
+            font-size: 14px;
+            width: 40px;
+            height: 21px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 37px 37px 37px 37px;
+            text-align: center;
+        }
         #container {
             width: 100%;
             height: 100%;
