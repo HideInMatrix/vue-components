@@ -231,6 +231,7 @@ interface drawImageParams {
   width?: number
   height?: number
 }
+let imageNatural = ref({ width: 0, height: 0, scaleWidth: 0, scaleHeight: 0 })
 let drawImage: Function = (params: drawImageParams) => {
   // 绘画图片
   return () => {
@@ -276,6 +277,12 @@ let drawImage: Function = (params: drawImageParams) => {
         canvasWidth.value,
         canvasHeight.value
       )
+      imageNatural.value = {
+        width: imageObj.naturalWidth,
+        height: imageObj.naturalHeight,
+        scaleWidth: scaleimage.width,
+        scaleHeight: scaleimage.height,
+      }
       background.value = scaleimage
 
       image = new Konva.Image({
@@ -286,6 +293,12 @@ let drawImage: Function = (params: drawImageParams) => {
         height: scaleimage.height,
         rotation: 0,
       })
+      // if (baseStage.value.width() < scaleimage.width) {
+      //   baseStage.value.width(scaleimage.width)
+      // }
+      // if (baseStage.value.height() < scaleimage.height) {
+      //   baseStage.value.height(scaleimage.height)
+      // }
 
       group.value?.add(image)
       baseLayer.value?.batchDraw()
@@ -351,7 +364,7 @@ let brushes = ref([
 
 let setBrush = (type: number) => {
   canPaint.value = !canPaint.value
-  lastOptions[lastSymbol.value] = true
+  lastOptions[lastSymbol.value] = false
   group.value?.draggable(!canPaint.value)
   config.value.lineWidth = type
 }
@@ -558,9 +571,15 @@ let rotate = (action: string) => {
 
 let drawShap = (type: string) => {
   canPaint.value = false
-  lastOptions[lastSymbol.value] = false
-  lastOptions[type] = true
-  lastSymbol.value = type
+  if (lastOptions[type] && lastSymbol.value === type) {
+    lastOptions[type] = false
+    group.value?.draggable(true)
+  } else {
+    lastOptions[lastSymbol.value] = false
+    lastOptions[type] = true
+    lastSymbol.value = type
+    group.value?.draggable(false)
+  }
   baseStage.value?.on('mousedown touchstart', (e) => {
     let pos = getRelativePointerPosition()
     //暂时固定写法
@@ -655,19 +674,28 @@ let controlCanvas = (action: string) => {
       break
     case 'clear': {
       if (appHistory.value.length > 1) {
-        groupScale.value = 10
-        appHistory.value.splice(1, appHistory.value.length - 1)
-        appHistoryStep.value = 1
-        let preGroup = (group.value = appHistory.value[0] as Konva.Group)
-        baseLayer.value?.destroyChildren()
-        baseLayer.value?.add(preGroup)
-        baseLayer.value?.draw()
+        for (let i = appHistory.value.length; i >= 1; i--) {
+          appHistoryStep.value--
+          let scale = group.value?.getAbsoluteScale() || { x: 0, y: 0 }
+          groupScale.value = Number((scale.x * 10).toFixed(2))
+          let preGroup = (group.value = appHistory.value?.pop() as Konva.Group)
+          baseLayer.value?.destroyChildren()
+          baseLayer.value?.add(preGroup as any)
+          baseLayer.value?.draw()
+        }
+        // groupScale.value = 10
+        // appHistory.value.splice(1, appHistory.value.length - 1)
+        // appHistoryStep.value = 1
+        // let preGroup = (group.value = appHistory.value[0] as Konva.Group)
+        // baseLayer.value?.destroyChildren()
+        // baseLayer.value?.add(preGroup)
+        // baseLayer.value?.draw()
       }
 
       break
     }
     case 'minus': {
-      if (groupScale.value > 2 && groupScale.value <= 20) {
+      if (groupScale.value > 10 && groupScale.value <= 20) {
         group.value?.draggable(!canPaint.value)
         group.value?.setAttr('x', canvasWidth.value / 2)
         group.value?.setAttr('y', canvasHeight.value / 2)
@@ -748,10 +776,20 @@ let exportImage = () => {
   transList.forEach((element) => {
     element.destroy()
   })
+  let ratio = () => {
+    console.log(imageNatural)
+
+    let widthScale = imageNatural.value.width / imageNatural.value.scaleWidth
+    let heightScale = imageNatural.value.height / imageNatural.value.scaleHeight
+
+    return Math.max(widthScale, heightScale, 1)
+  }
+  console.log('缩放大小', ratio())
+
   let dataURL = baseStage.value.toDataURL({
     x: relativePosition.x,
     y: relativePosition.y,
-    pixelRatio: 1,
+    pixelRatio: ratio(),
     width: relativePosition.width,
     height: relativePosition.height,
   })
