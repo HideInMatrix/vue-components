@@ -189,6 +189,53 @@ let initCanvas = () => {
       drawImage({ url: props.renderImgUrl })()
     }
     drawLiner()
+    thumbImage()
+  })
+}
+
+let thumbImage = () => {
+  baseStage.value?.on('wheel', (e: any) => {
+    // console.log('滚动', e.evt.deltaY)
+
+    let x = group.value?.getAttr('x')
+    let y = group.value?.getAttr('y')
+
+    let s1 = groupScale.value
+    let s2 = 0
+
+    let plusFun = () => {
+      let x2 = e.evt.layerX - ((e.evt.layerX - x) * s2) / s1
+      let y2 = e.evt.layerY - ((e.evt.layerY - y) * s2) / s1
+
+      canPaint.value = false
+      lastOptions[lastSymbol.value] = false
+      group.value?.draggable(!canPaint.value)
+      group.value?.setAttr('x', x2)
+      group.value?.setAttr('y', y2)
+
+      addHistory(group.value?.clone())
+      group.value?.scale({
+        x: +(groupScale.value / 10).toFixed(2),
+        y: +(groupScale.value / 10).toFixed(2),
+      })
+    }
+
+    console.log(groupScale.value)
+    if (e.evt.deltaY > 0) {
+      // 向下滚动 缩小
+      if (groupScale.value > 10 && groupScale.value <= 20) {
+        groupScale.value -= 1
+        s2 = groupScale.value
+        plusFun()
+      }
+    } else if (e.evt.deltaY < 0) {
+      if (groupScale.value >= 2 && groupScale.value < 20) {
+        // 向上滚动 放大
+        groupScale.value += 1
+        s2 = groupScale.value
+        plusFun()
+      }
+    }
   })
 }
 
@@ -293,12 +340,6 @@ let drawImage: Function = (params: drawImageParams) => {
         height: scaleimage.height,
         rotation: 0,
       })
-      // if (baseStage.value.width() < scaleimage.width) {
-      //   baseStage.value.width(scaleimage.width)
-      // }
-      // if (baseStage.value.height() < scaleimage.height) {
-      //   baseStage.value.height(scaleimage.height)
-      // }
 
       group.value?.add(image)
       baseLayer.value?.batchDraw()
@@ -777,14 +818,10 @@ let exportImage = () => {
     element.destroy()
   })
   let ratio = () => {
-    console.log(imageNatural)
-
     let widthScale = imageNatural.value.width / imageNatural.value.scaleWidth
     let heightScale = imageNatural.value.height / imageNatural.value.scaleHeight
-
     return Math.max(widthScale, heightScale, 1)
   }
-  console.log('缩放大小', ratio())
 
   let dataURL = baseStage.value.toDataURL({
     x: relativePosition.x,
