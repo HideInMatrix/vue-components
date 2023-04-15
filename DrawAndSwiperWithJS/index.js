@@ -19,6 +19,7 @@ class BschStage {
     this.canvasWidth = this.containerRoot.clientWidth;
     this.jumpToLastBoard = this.jumpToLastBoard.bind(this);
     this.changeCurrentIndex = this.changeCurrentIndex.bind(this);
+    this.clearStage = this.clearStage.bind(this);
   }
 
   initStage () {
@@ -93,15 +94,24 @@ class BschStage {
     // })
   }
 
-  // 清除面板
+  // 清除指定面板
   clearBoard (index) {
     this.canvases[index].clearBoard();
+  }
+
+  // 还原所有的面板
+  clearStage () {
+    for (let i = this.canvases.length - 1; i > 0; i--) {
+      this.unmount(i)
+    }
+    this.clearBoard(0);
   }
 
   jumpBoard (index) {
     this.swiper.slideTo(index)
   }
 
+  // 销毁模版
   destroyTemplate () {
     let addNewPageBtn = document.querySelector("#newPage");
     let clearPageBtn = document.querySelector("#clearPage");
@@ -120,8 +130,14 @@ class BschStage {
     savePageBtn.removeEventListener(`${EventMethods.MOUSEDOWN}`, e => {
       this.saveImage()
     })
+
+    while (this.containerRoot.firstElementChild) {
+      this.containerRoot.removeChild(this.containerRoot.firstElementChild);
+    }
+
   }
 
+  // 删除指定画布
   unmount (index) {
     if (index == 0 && this.canvases.length == 1) {
       alert("必须保留一张画布");
