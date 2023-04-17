@@ -7,7 +7,8 @@ export class Swiper {
       autoplay: true,
       delay: 3000,
       enablePlay: true,// 是否开启滑动模式
-      enablePagination: false
+      enablePagination: false,
+      pagination: null,// 如果开了页码的话，就一定要有页码对象
     };
 
     // 合并选项
@@ -53,9 +54,6 @@ export class Swiper {
       });
 
     }
-
-    // 如何你的公开方法会被对象所调用，需要如下的类似代码确保this指向不出问题
-    // this.activePageNumberByIndex = this.activePageNumberByIndex.bind(this);
   }
 
   destroy () {
@@ -101,42 +99,19 @@ export class Swiper {
   // 这一步频繁的渲染dom，有损性能
   updatePageNumber () {
     if (this.settings.enablePagination) {
-      let _pagination = document.querySelector('.bsch-pagination-list');
-      while (_pagination.firstElementChild) {
-        _pagination.firstElementChild.removeEventListener(`${EventMethods.MOUSEDOWN}`, () => { this.activePageNumberByDom(_pagination.firstElementChild) })
-        _pagination.removeChild(_pagination.firstElementChild);
-
-      }
-      this.slides.forEach((item, index) => {
-        let navItem = document.createElement("li")
-        navItem.className = `pagination-item`
-        navItem.setAttribute('data-page', index)
-        navItem.textContent = index + 1
-        navItem.addEventListener(`${EventMethods.MOUSEDOWN}`, () => { this.activePageNumberByDom(navItem) })
-        _pagination.appendChild(navItem)
-      })
+      this.settings.pagination.updatePageNumber(this.slides.length)
     }
 
   }
 
-  activePageNumberByDom (_dom) {
-    if (this.lastPagination) {
-      this.lastPagination.classList.remove('active');
-    }
-    _dom.classList.add('active');
-    this.lastPagination = _dom;
-    this.slideTo(_dom.dataset.page)
-  }
+  // activePageNumberByDom (_dom) {
+  //   this.settings.pagination.activePageNumberByDom(_dom)
+  //   this.slideTo(_dom.dataset.page)
+  // }
 
   activePageNumberByIndex (index) {
     if (this.settings.enablePagination) {
-      if (this.lastPagination) {
-        this.lastPagination.classList.remove('active');
-      }
-      // 记录下最近被点亮的pagination
-      let _paginationList = document.querySelectorAll('.bsch-pagination-list .pagination-item');
-      _paginationList[index].classList.add('active');
-      this.lastPagination = _paginationList[index];
+      this.settings.pagination.activePageNumberByIndex(index)
     }
   }
 

@@ -2,6 +2,7 @@ import { DrawCanvas, EventMethods } from "./board";
 
 import { CanvasTemplate } from "./template";
 import { Swiper } from "./swiper";
+import { Pagination } from "./pagination";
 class BschStage {
   canvases = [];//数组
   currentIndex = -1;
@@ -9,47 +10,65 @@ class BschStage {
   canvasHeight = 0;
   containerRoot = null;
 
-  swiper = null;
+  swiper = null; // 轮播图组件
+  pagination = null; // 页码组件
   constructor({ container, options }) {
+    // 当new的时候表明使用者认为该dom元素是存在的
+    // 可能此时dom元素是存在的，但是还没渲染完，而这里是拿不到的
+    // 所以这里做个延迟操作
+    this.containerRoot = document.querySelector(container)
     this.settings = Object.assign({
       saveImageAction: null,// 保存按钮点击回调
     }, options)
-    this.containerRoot = document.querySelector(container)
     this.canvasHeight = this.containerRoot.clientHeight;
     this.canvasWidth = this.containerRoot.clientWidth;
     this.jumpToLastBoard = this.jumpToLastBoard.bind(this);
     this.changeCurrentIndex = this.changeCurrentIndex.bind(this);
     this.clearStage = this.clearStage.bind(this);
+
   }
 
+
+  // 初始化展示的舞台
   initStage () {
     // 从 CanvasTemplate 中获取html结构
     this.containerRoot.innerHTML = CanvasTemplate()
     this.createCanvas();
-    this.swiper = new Swiper('.swiper', {
+
+    // 初始化Pagination挂载到swiper上
+    this.pagination = new Pagination(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper .bsch-pagination-list`, {
+      activePageAction: (_dom) => this.swiper.slideTo(_dom.dataset.page)
+    })
+    this.swiper = new Swiper(`#${this.containerRoot.id} .board-wrapper .swiper`, {
       enablePlay: false,
       onSlideAdded: this.jumpToLastBoard,
       onSlideChanged: this.changeCurrentIndex,
-      enablePagination: true
+      enablePagination: true,
+      pagination: this.pagination
     })
     this.swiper.init();
     this.bindEvents();
   }
+
+  // 修改当前画布的下标
   changeCurrentIndex (index) {
     this.currentIndex = index
   }
+
+  // 跳到最近一个画布上
   jumpToLastBoard () {
     this.jumpBoard(this.currentIndex)
   }
+
+  // 按钮事件绑定
   bindEvents () {
-    let addNewPageBtn = document.querySelector("#newPage");
-    let clearPageBtn = document.querySelector("#clearPage");
-    let deletePageBtn = document.querySelector("#deletePage");
-    let savePageBtn = document.querySelector("#savePage")
+    let addNewPageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #newPage`);
+    let clearPageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #clearPage`);
+    let deletePageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #deletePage`);
+    let savePageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #savePage`)
 
     addNewPageBtn.addEventListener(`${EventMethods.MOUSEDOWN}`, (e) => {
       this.createCanvas();
-
     })
     clearPageBtn.addEventListener(`${EventMethods.MOUSEDOWN}`, e => {
       this.clearBoard(this.currentIndex)
@@ -62,10 +81,11 @@ class BschStage {
     })
   }
 
+  // 新建一个画布
   createCanvas () {
     let _canvas = new DrawCanvas({ width: this.canvasWidth, height: this.canvasHeight })
     // 将所生成的canvas挂在 _middleContainer 下面
-    let _middleContainer = document.querySelector(".swiper .swiper-wrapper");
+    let _middleContainer = document.querySelector(`#${this.containerRoot.id} .board-wrapper .swiper .swiper-wrapper`);
     _canvas.canvasRef.setAttribute("data-index", this.currentIndex + 1)
 
     _middleContainer.appendChild(_canvas.canvasRef);
@@ -74,6 +94,7 @@ class BschStage {
     this.currentIndex = this.canvases.length - 1;
   }
 
+  // 保存图片
   saveImage () {
     let imageArray = this.canvases.map(item =>
       item.exportImage()
@@ -113,10 +134,10 @@ class BschStage {
 
   // 销毁模版
   destroyTemplate () {
-    let addNewPageBtn = document.querySelector("#newPage");
-    let clearPageBtn = document.querySelector("#clearPage");
-    let deletePageBtn = document.querySelector("#deletePage");
-    let savePageBtn = document.querySelector("#savePage")
+    let addNewPageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #newPage`);
+    let clearPageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #clearPage`);
+    let deletePageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #deletePage`);
+    let savePageBtn = document.querySelector(`#${this.containerRoot.id} .board-wrapper .toolbar-wrapper #savePage`)
 
     addNewPageBtn.removeEventListener(`${EventMethods.MOUSEDOWN}`, (e) => {
       this.createCanvas();
@@ -135,6 +156,8 @@ class BschStage {
       this.containerRoot.removeChild(this.containerRoot.firstElementChild);
     }
 
+    this.pagination.destroyPagination()
+
   }
 
   // 删除指定画布
@@ -146,7 +169,7 @@ class BschStage {
     let deleteCanvasItem = this.canvases[index];
     deleteCanvasItem.destroy();
     // 所生成的canvas都挂在 _middleContainer 下面
-    let _middleContainer = document.querySelector(".swiper .swiper-wrapper");
+    let _middleContainer = document.querySelector(`#${this.containerRoot.id} .board-wrapper .swiper .swiper-wrapper`);
     _middleContainer.removeChild(deleteCanvasItem.canvasRef);
     this.canvases.splice(index, 1);
   }
