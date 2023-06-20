@@ -152,9 +152,9 @@ export default {
          */
         scaleBrush() {
             let scale = this.group.scale();
-            console.log(scale);
+            // console.log(scale);
             // this.config.lineWidth = this.config.lineWidth / scale.x;
-            console.log(this.config.lineWidth);
+            // console.log(this.config.lineWidth);
         },
         onTouchStart(event) {
             let _this = this;
@@ -646,6 +646,7 @@ export default {
                 // imageObj.setAttribute("crossOrigin", "anonymous");
 
                 imageObj.src = url;
+                // imageObj.src = "/1.jpg";
 
                 imageObj.onload = async () => {
                     let scaleimage = this.scaleImage(
@@ -928,6 +929,8 @@ export default {
                 return Math.max(widthScale, heightScale, 1);
             };
             let dataURL = this.baseStage.toDataURL({
+                mimeType: "image/jpeg",
+                quality: 0.5,
                 x: relativePosition.x,
                 y: relativePosition.y,
                 pixelRatio: ratio(),
@@ -936,16 +939,16 @@ export default {
             });
 
             return dataURL;
-            let downloadURI = (uri, name) => {
-                let link = document.createElement("a");
-                link.download = name;
-                console.log(uri);
-                link.href = uri;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-            // downloadURI(dataURL, "stage.png");
+            // let downloadURI = (uri, name) => {
+            //     let link = document.createElement("a");
+            //     link.download = name;
+            //     console.log(uri);
+            //     link.href = uri;
+            //     document.body.appendChild(link);
+            //     link.click();
+            //     document.body.removeChild(link);
+            // };
+            // downloadURI(dataURL, "stage.jpg");
         },
     },
 };
